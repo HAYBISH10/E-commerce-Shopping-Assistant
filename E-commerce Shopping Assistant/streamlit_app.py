@@ -156,7 +156,7 @@ def save_users_dict(users: dict):
 
 def register_user(username: str, password: str):
     """
-    Register new user as 'pending' → must be approved in Admin Panel.
+    Register new user directly as 'customer' (no admin approval needed).
     """
     username = username.strip()
     if not username:
@@ -174,10 +174,10 @@ def register_user(username: str, password: str):
 
     users[username] = {
         "password_hash": hash_password(password),
-        "role": "pending",  # ⬅️ requires your approval
+        "role": "customer",  # ✅ no more 'pending'
     }
     save_users_dict(users)
-    return True, "Registration submitted. Waiting for admin approval."
+    return True, "Registration successful! You can now log in."
 
 
 def login(username: str, password: str):
@@ -193,10 +193,7 @@ def login(username: str, password: str):
     if hash_password(password) != user["password_hash"]:
         return False, "Incorrect password."
 
-    # Block pending users from logging in anywhere
-    if str(user["role"]).lower() == "pending":
-        return False, "Your account is pending admin approval."
-
+    # ✅ no more blocking on 'pending' – everyone (non-admin) behaves like a normal user
     st.session_state.auth_user = username
     st.session_state.auth_role = user["role"]
     return True, f"Logged in as {username} ({user['role']})"
@@ -393,9 +390,26 @@ def remove_from_wishlist(product_id, username: str):
 # SALES ANALYSIS
 # -------------------------
 def load_orders():
+    """
+    Safely load orders.csv.
+
+    - If file does not exist → return None.
+    - If file is corrupted / not valid CSV → show a friendly error and return None.
+    """
     if not os.path.exists(ORDERS_PATH):
         return None
-    df = pd.read_csv(ORDERS_PATH)
+
+    try:
+        df = pd.read_csv(ORDERS_PATH)
+    except pd.errors.ParserError:
+        st.error(
+            "⚠️ The orders file (orders.csv) is corrupted or not a valid CSV format.\n\n"
+            "👉 Fix:\n"
+            "1. Delete `orders.csv` from the `data` folder in your project, then\n"
+            "2. Place a new order from the user side to recreate it."
+        )
+        return None
+
     if "order_timestamp" in df.columns:
         df["order_timestamp"] = pd.to_datetime(df["order_timestamp"], errors="coerce")
         df["order_date"] = df["order_timestamp"].dt.date
@@ -725,7 +739,8 @@ def render_admin_portal(products_df, vectorizer, tfidf_matrix):
 
             st.markdown("#### ✏️ Edit User")
             selected_user = st.selectbox("Select user", users_df["username"].tolist())
-            new_role = st.selectbox("New role", ["admin", "customer", "pending"], index=1)
+            # simplify roles to admin / customer for editing:
+            new_role = st.selectbox("New role", ["admin", "customer"], index=1)
 
             new_pass = st.text_input("New password (leave blank to keep current)", type="password")
 

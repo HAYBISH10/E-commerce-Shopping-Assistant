@@ -1,10 +1,5 @@
-pandas==2.1.4
-numpy==1.26.4
-scikit-learn==1.4.1.post1
-ipython==8.20.0
-jupyter==1.0.0
-matplotlib==3.8.2
-python-dateutil==2.8.2
-seaborn==0.13.2
-streamlit==1.39.0
-xlsxwriter==3.1.5
+streamlit
+pandas
+numpy
+scikit-learn
+xlsxwriter

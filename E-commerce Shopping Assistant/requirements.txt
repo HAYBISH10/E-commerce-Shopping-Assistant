@@ -7,3 +7,4 @@ matplotlib==3.8.2
 python-dateutil==2.8.2
 seaborn==0.13.2
 streamlit==1.39.0
+xlsxwriter==3.1.5
